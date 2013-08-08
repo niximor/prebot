@@ -21,16 +21,19 @@ def _checkArgument(arg, args, requestedType):
 class IrcServerEvent:
     pass
 
+
 class ServerMessage(IrcServerEvent):
     def __init__(self, sender, code, text):
         self.sender = sender
         self.code = code
         self.text = text
 
+
 class Error(IrcServerEvent):
     def __init__(self, sender, reason):
         self.sender = sender
         self.reason = reason
+
 
 class ChannelMessage(IrcServerEvent):
     def __init__(self, sender, channel, text):
@@ -38,21 +41,25 @@ class ChannelMessage(IrcServerEvent):
         self.channel = channel
         self.text = text
 
+
 class PrivateMessage(IrcServerEvent):
     def __init__(self, sender, text):
         self.sender = sender
         self.text = text
+
 
 class Join(IrcServerEvent):
     def __init__(self, sender, channel):
         self.sender = sender
         self.channel = channel
 
+
 class Part(IrcServerEvent):
     def __init__(self, sender, channel, reason):
         self.sender = sender
         self.channel = channel
         self.reason = reason
+
 
 class Quit(IrcServerEvent):
     def __init__(self, sender, reason):
@@ -144,7 +151,7 @@ class IrcConnection:
         pass
 
     def processLine(self, line):
-
+        pass
 
     def connect(self):
         # Already connected...
