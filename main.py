@@ -67,7 +67,7 @@ def main():
         pass
 
     log.info("Shutdown.")
-
+    irc.close()
 
 if __name__ == "__main__":
     main()

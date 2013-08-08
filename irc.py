@@ -6,7 +6,8 @@
 from types import *
 import socket
 import logging
-
+from socketpool import SocketPool
+from threading import Thread
 
 def _checkArgument(arg, args, requestedType):
         if arg not in args:
@@ -16,6 +17,47 @@ def _checkArgument(arg, args, requestedType):
         if currentType != requestedType:
             raise AttributeError("%s must be %s, but is %s." % (arg, requestedType, currentType))
 
+
+class IrcServerEvent:
+    pass
+
+class ServerMessage(IrcServerEvent):
+    def __init__(self, sender, code, text):
+        self.sender = sender
+        self.code = code
+        self.text = text
+
+class Error(IrcServerEvent):
+    def __init__(self, sender, reason):
+        self.sender = sender
+        self.reason = reason
+
+class ChannelMessage(IrcServerEvent):
+    def __init__(self, sender, channel, text):
+        self.sender = sender
+        self.channel = channel
+        self.text = text
+
+class PrivateMessage(IrcServerEvent):
+    def __init__(self, sender, text):
+        self.sender = sender
+        self.text = text
+
+class Join(IrcServerEvent):
+    def __init__(self, sender, channel):
+        self.sender = sender
+        self.channel = channel
+
+class Part(IrcServerEvent):
+    def __init__(self, sender, channel, reason):
+        self.sender = sender
+        self.channel = channel
+        self.reason = reason
+
+class Quit(IrcServerEvent):
+    def __init__(self, sender, reason):
+        self.sender = sender
+        self.reason = reason
 
 ##
 # Class that handles one connection to one IRC network.
@@ -74,6 +116,34 @@ class IrcConnection:
             self.realname = "Prebot IRC Bot"
 
         self.connected = False
+        self.socketpool = SocketPool()
+        self.thread = Thread(target=self.threadLoop)
+        self.thread.start()
+
+    def close(self):
+        if self.connected:
+            self.socket.close(True)
+
+        if self.thread.is_alive():
+            self.socketpool.quitLoop()
+            self.thread.join()
+
+    def threadLoop(self):
+        self.socketpool.loop()
+
+    def socketRead(self, socket):
+        while True:
+            line = socket.readLine()
+            if line is None:
+                break
+
+            self.log.debug(">>> %s", line)
+            self.processLine(line)
+
+    def socketExtra(self, socket):
+        pass
+
+    def processLine(self, line):
 
 
     def connect(self):
@@ -97,14 +167,15 @@ class IrcConnection:
                 self.log.info("Unable to connect: %s", str(msg))
                 continue
 
+            self.socket = self.socketpool.add(self.socket, read=self.socketRead, other=self.socketExtra)
             break
+
+        if self.password is not None:
+            self.raw("PASS %s" % (self.password))
 
         self.raw("NICK %s" % self.nicks[0])
         self.raw("USER %s * * :%s" % (self.user, self.realname))
 
-        if self.password is not None:
-            self.raw("PASSWORD %s" % (self.password))
-
-
     def raw(self, msg):
-        self.socket.sendall(msg)
+        self.log.debug("<<< %s", msg)
+        self.socket.enqueue("%s\r\n" % msg)
