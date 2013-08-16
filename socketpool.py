@@ -4,11 +4,11 @@
 #
 
 import select
-import threading
 import logging
 import socket
 from time import sleep
 from sys import platform
+from singleton import Singleton
 
 isWin32 = platform == "win32"
 
@@ -63,16 +63,13 @@ class PoolSocket:
         self.wrcall = wrcall
         self.othercall = othercall
         self.queue = []
-        self.queueMutex = threading.Lock()
         self.processedData = ""
 
     def fileno(self):
         return self._socket.fileno()
 
     def enqueue(self, data):
-        self.queueMutex.acquire()
         self.queue.append(WriteAction(self._socket, data))
-        self.queueMutex.release()
 
     def readLine(self):
         pos = self.processedData.find("\n")
@@ -104,9 +101,7 @@ class PoolSocket:
 
     def close(self, immediately=False):
         if immediately:
-            self.queueMutex.acquire()
             self.queue = []
-            self.queueMutex.release()
             self.rdcall = None
             self.wrcall = None
             self.othercall = None
@@ -128,16 +123,13 @@ class PoolSocket:
             self.rdcall(self)
 
     def callWrite(self):
-        self.queueMutex.acquire()
         if not self.queue:
-            self.queueMutex.release()
             if self.wrcall is not None:
                 self.wrcall(self)
         else:
             qa = self.queue[0]
             if qa.run():
                 self.queue.remove(qa)
-            self.queueMutex.release()
 
     def callOther(self):
         if self.othercall is not None:
@@ -145,13 +137,12 @@ class PoolSocket:
 
 
 class SocketPool:
+    __metaclass__ = Singleton
+
     def __init__(self):
         self.sockets = {}
-        self.mutex = threading.Lock()
-        self.quitMutex = threading.Lock()
         
     def add(self, socket, read=None, write=None, other=None):
-        self.mutex.acquire()
         if not socket in self.sockets:
             # Add new socket to pool
             s = PoolSocket(socket, rdcall=read, wrcall=write, othercall=other)
@@ -162,7 +153,6 @@ class SocketPool:
             s.rdcall = read
             s.wrcall = write
             s.othercall = other
-        self.mutex.release()
 
         return s
         
@@ -170,18 +160,14 @@ class SocketPool:
         if instanceof(socket, PoolSocket):
             socket = socket._socket
 
-        self.mutex.acquire()
         if socket in self.sockets:
             del self.sockets[socket]
-        self.mutex.release()
 
-
-    def poll(self):
+    def poll(self, timeout=1.0):
         rdsock = []
         wrsock = []
         othersock = []
 
-        self.mutex.acquire()
         for socket, mysock in self.sockets.iteritems():
             if mysock.needRead():
                 rdsock.append(mysock)
@@ -191,12 +177,11 @@ class SocketPool:
 
             if mysock.needOther():
                 othersock.append(mysock)
-        self.mutex.release()
 
         if not rdsock and not wrsock and not othersock:
             sleep(1.0)
         else:
-            rd, wr, oth = select.select(rdsock, wrsock, othersock, 1.0)
+            rd, wr, oth = select.select(rdsock, wrsock, othersock, timeout)
 
             for sock in rd:
                 sock.callRead()
@@ -206,19 +191,3 @@ class SocketPool:
 
             for sock in oth:
                 sock.callOther()
-
-
-    def loop(self):
-        self.quitMutex.acquire()
-        self._quitLoop = False
-        while not self._quitLoop:
-            self.quitMutex.release()
-            self.poll()
-            self.quitMutex.acquire()
-        self.quitMutex.release()
-
-
-    def quitLoop(self):
-        self.quitMutex.acquire()
-        self._quitLoop = True
-        self.quitMutex.release()
