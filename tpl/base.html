@@ -1,0 +1,36 @@
+{% macro formError(text) %}
+    % if text:
+        <div class="error">${text}</div>
+    % endif
+{% endmacro %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>PreBot Admin</title>
+        <meta http-euqiv="content-type" content="text/html; charset=utf-8" />
+        <link rel="stylesheet" type="text/css" href="/style.css" />
+    </head>
+
+    <body>
+        <div class="header">
+            <h1><a href="/">PreBot Admin</a></h1>
+        </div>
+
+        <div class="menu">
+            <ul>
+                % for item in menu:
+                <li><a href="${item["uri"]}">${item["name"]}</a></li>
+                % endfor
+            </ul>
+        </div>
+
+        <div class="main">
+            {% block content %}{% endblock %}
+        </div>
+
+        <div class="footer">
+            Copyright &copy; Niximor
+        </div>
+        {% include "debug.html" %}
+    </body>
+</html>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Servers</h2>
+
+<table class="list">
+    <thead>
+        <tr>
+            <th>Server</th>
+            <th>Enabled</th>
+            <th>Status</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        % for server in servers:
+        <tr>
+            <td>${server["host"]}:${server["port"]}</td>
+            <td style="text-align: center">
+                % if server["enabled"]:
+                &#x2713;
+                % else:
+                &#x2717;
+                % endif
+            </td>
+            <td>
+                ${server["status"]}
+            </td>
+            <td class="actions">
+                % if server["enabled"]:
+                <a href="/server.disable?id=${server['id']}" title="Disable">&#x25FC;</a>
+                % else:
+                <a href="/server.enable?id=${server['id']}" title="Enable">&#x25BA;</a>
+                % endif
+
+                <a href="/server.remove?id=${server['id']}" title="Remove">&#x274C;</a>
+            </td>
+        </tr>
+        % endfor
+    </tbody>
+</table>
+
+<h3>Add server</h3>
+<form action="/servers.add" method="post" class="form">
+    <div>
+        <label for="host" class="required">Hostname:</label>
+        <input type="text" name="host" required value="${formData['host']}" />
+        % if errors:
+            ${formError(errors["host"])}
+        % endif
+    </div>
+
+    <div>
+        <label for="port" class="required">Port:</label>
+        <input type="text" name="port" size="4" required value="${formData['port']}" />
+        % if errors:
+            ${formError(errors["port"])}
+        % endif
+    </div>
+
+    <div>
+        <label for="user" class="required">User:</label>
+        <input type="text" name="user" required value="${formData['user']}" />
+        % if errors:
+            ${formError(errors["user"])}
+        % endif
+    </div>
+
+    <div>
+        <label for="password">Password:</label>
+        <input type="text" name="password" value="${formData['password']}" />
+        % if errors:
+            ${formError(errors["password"])}
+        % endif
+    </div>
+
+    <div>
+        <label for="realname" class="required">Realname:</label>
+        <input type="text" name="realname" required value="${formData['realname']}" />
+        % if errors:
+            ${formError(errors["realname"])}
+        % endif
+    </div>
+
+    <input type="submit" value="Add" />
+</form>
+
+{% endblock %}

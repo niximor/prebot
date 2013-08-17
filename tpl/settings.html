@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Settings</h2>
+
+<h3>Nicks</h3>
+<p>Specify nicks, that the bot should use. Topmost nick has the highest priority.</p>
+<table class="list">
+    <thead>
+        <tr>
+            <th style="width: 10em">Nick</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        % for nick in nicks:
+        <tr>
+            <td>${nick}</td>
+            <td class="actions">
+                <a href="/nick.remove?nick=${nick|urlencode}" title="Remove">&#x274C;</a>
+                <a href="/nick.moveup?nick=${nick|urlencode}" title="Move up">&#x25B2;</a>
+                <a href="/nick.movedown?nick=${nick|urlencode}" title="Move down">&#x25BC;</a>
+            </td>
+        </tr>
+        % endfor
+    </tbody>
+</table>
+
+<form action="/nick.add" method="post">
+    <h4>Add nick</h4>
+    <label for="nick">Nick:</label> <input type="text" name="nick" size="8" /> <input type="submit" value="Add" />
+</form>
+
+{% endblock %}

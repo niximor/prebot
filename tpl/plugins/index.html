@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Plugins</h2>
+
+<table class="list">
+    <thead>
+        <tr>
+            <th>Plugin</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        % for plugin in plugins:
+        <tr>
+            <td>${plugin["name"]}</td>
+            <td class="actions">
+                % if plugin["loaded"]:
+                <a href="/plugins.unload?plugin=${plugin['name']|urlencode}" title="Unload">&#x25FC;</a>
+                <a href="/plugins.reload?plugin=${plugin['name']|urlencode}" title="Reload">&#x27F3;</a>
+                % else:
+                <a href="/plugins.load?plugin=${plugin['name']|urlencode}" title="Load">&#x25BA;</a>
+                % endif
+            </td>
+        </tr>
+        % endfor
+    </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,31 @@
+body { color: #657b83; background-color: #fdf6e3; font-family: verdana, arial, helvetica, sans-serif; font-size: 0.8em; }
+a { color: #cb4b16;}
+h1 a { color: #b58900; text-decoration: none; font-weight: normal; }
+h2, h3 { font-weight: normal; }
+.menu { float: left; width: 13em; }
+.main { margin-left: 15em; }
+.header, .footer { padding-left: 1em; padding-right: 1em; }
+.footer { clear: both; padding-top: 2em; }
+
+.menu ul { margin: 0; padding: 0; list-style-type: none; }
+.menu ul li a { display: block; padding-top: 0.5em; padding-bottom: 0.5em; padding-left: 1em; padding-right: 1em; }
+.menu ul li a:hover { background-color: #eee8d5; color: #268bd2; }
+
+.actions a { text-decoration: none; }
+
+table.list { border-collapse: collapse; }
+table.list th, table.list td { padding: 0.2em; padding-left: 0.5em; padding-right: 0.5em; }
+table.list thead th { background-color: #eee8d5; color: #268bd2; text-align: left; }
+table.list tbody td { border-bottom: solid 1px #93a1a1; }
+table.list tbody tr:last-of-type td { border-bottom: none; }
+
+input, textarea, select, option { background-color: #eee8d5; border: solid 1px #657b83; font-family: verdana, arial, helvetica, sans-serif; font-size: 1em; }
+input[type=submit] { color: #cb4b16; font-weight: bold; }
+
+form.form { text-align: center; display: inline-block; }
+form.form>div { padding-bottom: 0.5em; text-align: left; }
+form.form label { width: 10em; display: inline-block; }
+form.form label.required { color: #dc322f; }
+
+.error { font-size: 0.8em; font-weight: bold; color: #dc322f; }
+form.form .error { margin-left: 13em; padding-top: 0.2em; padding-bottom: 0.5em; }

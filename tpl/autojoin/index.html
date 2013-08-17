@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Autojoin</h2>
+
+<table class="list">
+    <thead>
+        <tr>
+            <th>Channel</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        % for channel in channels:
+            <tr>
+                <td>{% if channel["network"] %}${channel["network"]}/{% endif %}${channel["channel"]}</td>
+                <td class="actions">
+                    <a href="/autojoin.remove?channel=${channel['channel']|urlencode}&network={% if channel['network'] %}${channel['network']|urlencode}{% endif %}" title="Remove">&#x274C;</a>
+                </td>
+            </tr>
+        % endfor
+    </tbody>
+</table>
+
+<h3>Add new channel</h3>
+<form action="/autojoin.add" method="post">
+    <label for="network">Network:</label>
+    <select name="network">
+        <option value="">All</option>
+        % for network in networks:
+        <option>${network}</option>
+        % endfor
+    </select>
+
+    <label for="channel">Channel:</label>
+    <input type="text" name="channel" />
+
+    <input type="submit" value="Add" />
+</form>
+
+{% endblock %}
