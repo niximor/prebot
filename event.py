@@ -44,7 +44,7 @@ class Events:
 
     def unregisterAll(self, module):
         if module in self._modules:
-            for event, callback in ev._modules[module]:
+            for event, callback in self._modules[module]:
                 self.unregister(event, callback)
 
     def trigger(self, event, data=None):
@@ -52,13 +52,13 @@ class Events:
 
     def poll(self):
         for event, data in self._toTrigger:
-            #self.log.debug("Firing event %s", event)
+            self.log.debug("Firing event %s", event)
             if event in self._events:
                 for callback, handlerData in self._events[event].iteritems():
                     try:
                         callback(handlerData=handlerData, eventData=data)
                     except Exception, e:
-                        print e
+                        logging.getLogger(callback.__module__).exception(e)
 
         self._toTrigger = []
 

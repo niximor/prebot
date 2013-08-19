@@ -15,32 +15,10 @@ from modules import Modules
 from socketpool import SocketPool
 from storage import db
 from irc import IrcConnection
-from conftools import listNicks
+from util import listNicks, getFirstNick, _networks, quit
+from httpd import HTTPServer
 
-_networks = {}
-quit = False
-log = logging.getLogger("main")
-
-def getConn(networkName):
-    """
-        Return connection to a given IRC network.
-    """
-    return _networks[networkName] if networkName in _networks else None
-
-
-@event.handler("irc.connected")
-def onConnected(eventData, handlerData):
-    """
-        Fired when connection to IRC network is successfully registered.
-        Used to add connection to list of networks.
-    """
-    _networks[eventData.irc.networkName] = eventData.irc
-
-@event.handler("irc.disconnected")
-def onDisconnected(eventData, handlerData):
-    networkName = eventData.irc.networkName
-    if networkName in _networks:
-        del _networks[networkName]
+log = logging.getLogger(__name__)
 
 
 def shutdown():
@@ -71,34 +49,46 @@ def main():
 
     c = db.cursor()
     c.execute("CREATE TABLE IF NOT EXISTS servers ("
-        "enabled INT DEFAULT 1, "
-        "host TEXT, "
-        "port INT, "
-        "user TEXT, "
-        "password TEXT NULL, "
-        "realname TEXT, "
-        "UNIQUE (host,port)"
-    ")")
+              "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+              "enabled INT DEFAULT 1, "
+              "host TEXT, "
+              "port INT, "
+              "user TEXT, "
+              "password TEXT NULL, "
+              "realname TEXT, "
+              "UNIQUE (host,port)"
+              ")")
 
     c.execute("CREATE TABLE IF NOT EXISTS nicks ("
-        "nick TEXT, "
-        "enabled INT DEFAULT 1, "
-        "UNIQUE (nick)"
-    ")")
+              "nick TEXT, "
+              "sort INT, "
+              "UNIQUE (nick)"
+              ")")
 
-    c.execute("SELECT host, port, user, password, realname FROM servers WHERE enabled = 1")
-    for row in c.fetchall():
-        # Connect to IRC to all specified networks.
-        irc = IrcConnection(
-            host=row["host"],
-            port=row["port"],
-            nick=listNicks(),
-            user=row["user"],
-            realname=row["realname"],
-            password=row["password"]
-        )
+    nick = getFirstNick()
+    if nick is not None:
+        c.execute("SELECT host, port, user, password, realname FROM servers WHERE enabled = 1")
+        gotServer = False
+        for row in c.fetchall():
+            # Connect to IRC to all specified networks.
+            irc = IrcConnection(
+                host=row["host"],
+                port=row["port"],
+                nick=nick,
+                user=row["user"],
+                realname=row["realname"],
+                password=row["password"]
+            )
 
-        irc.connect()
+            irc.connect()
+            gotServer = True
+
+        if not gotServer:
+            log.info("No servers configured.")
+    else:
+        log.info("No nicks configured.")
+
+    httpd = HTTPServer(('0.0.0.0', 31331))
 
     try:
         while True:
@@ -108,7 +98,10 @@ def main():
         pass
 
     log.info("Shutdown.")
-    irc.close()
+    for irc in _networks:
+        irc.close()
+
+    del httpd
 
 if __name__ == "__main__":
     main()

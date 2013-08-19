@@ -9,12 +9,19 @@ import logging
 import event
 from socketpool import SocketPool
 import re
+from util import _networks
+
 
 def _checkArgument(arg, args, requestedType):
         if arg not in args:
             raise KeyError("%s is mandatory configuration parameter." % arg)
 
         currentType = type(args[arg])
+
+        # unicode and string are equal.
+        if currentType == type(u"") and requestedType == type(""):
+            currentType = type("")
+
         if currentType != requestedType:
             raise AttributeError("%s must be %s, but is %s." % (arg, requestedType, currentType))
 
@@ -22,6 +29,7 @@ def _checkArgument(arg, args, requestedType):
 class IrcServerEvent:
     def __init__(self, irc):
         self.irc = irc
+
 
 class RawReceive(IrcServerEvent):
     def __init__(self, irc, line):
@@ -99,10 +107,51 @@ class Connected(IrcServerEvent):
     def __init__(self, irc):
         IrcServerEvent.__init__(self, irc)
 
-##
-# Class that handles one connection to one IRC network.
-#
+
+class UserInfo:
+    addrRe = re.compile("(.*?)!(.*?)@(.*)")
+
+    def __init__(self, nick, user=None, host=None):
+        self.nick = nick
+        self.user = user
+        self.host = host
+        self.channels = []
+
+    def addChannel(self, channel):
+        self.channels.append(channel)
+
+    def remChannel(self, channel):
+        self.channels.remove(channel)
+
+    @staticmethod
+    def parseAddress(address):
+        """
+            Return a 3-tuple containing nick, user and host.
+        """
+        match = UserInfo.addrRe.match(address)
+        if match:
+            return (match.groups(1), match.groups(2), match.groups(3))
+
+
+class ChannelInfo:
+    """
+        Class holding info of one of channels that the connection knows of.
+    """
+    def __init__(self, name):
+        self.name = name
+        self.users = []
+
+    def addUser(self, user):
+        self.users.append(user)
+
+    def remUser(self, user):
+        self.users.remove(user)
+
+
 class IrcConnection:
+    """
+        Class that handles one connection to one IRC network.
+    """
     def __init__(self, **args):
         """
             Initializes connection to IRC server.
@@ -118,18 +167,14 @@ class IrcConnection:
             - password - server password
         """
 
+        _networks.append(self)
         self.log = logging.getLogger(__name__)
 
         _checkArgument("host", args, StringType)
-
-        try:
-            _checkArgument("nick", args, ListType)
-        except AttributeError:
-            _checkArgument("nick", args, StringType)
-            args["nick"] = [args["nick"]]
+        _checkArgument("nick", args, StringType)
 
         self.hostname = args["host"]
-        self.nicks = args["nick"]
+        self.currentNick = args["nick"]
 
         if "user" in args:
             _checkArgument("user", args, StringType)
@@ -143,7 +188,7 @@ class IrcConnection:
         else:
             self.port = 6667
 
-        if "password" in args:
+        if "password" in args and args["password"] is not None:
             _checkArgument("password", args, StringType)
             self.password = args["password"]
         else:
@@ -158,6 +203,8 @@ class IrcConnection:
         self.connected = False
         self.registered = False
         self.props = {}
+        self.users = {}
+        self.channels = {}
 
     def close(self):
         if self.connected:
@@ -183,13 +230,13 @@ class IrcConnection:
         self.registered = False
 
         event.trigger("irc.disconnected", Disconnected(self))
-        
-    def parseLine(self, line):
-        pos = line.find(":")
-        if pos == 0:
-            pos = line.find(":", pos + 1)
 
-        return line[0:pos - 1].split(" ") + [line[pos + 1:]]
+    def parseLine(self, line):
+        pos = line.find(" :")
+        if pos == 0:
+            pos = line.find(" :", pos + 1)
+
+        return line[0:pos].split(" ") + [line[pos + 2:]]
 
     @staticmethod
     def isNumber(num):
@@ -202,55 +249,99 @@ class IrcConnection:
     def processLine(self, line):
         parsed = self.parseLine(line)
         if parsed[0][0] == ":":
-            # It is incomming message
-
             # Cut off begining colon and keep hostname only.
             parsed[0] = parsed[0][1:]
             sender = parsed[0]
             cmd = parsed[1]
             args = parsed[2:]
-
-            eventName = None
-            eventData = None
-
-            # System message
-            if self.isNumber(cmd):
-                num = int(cmd)
-                eventName = "irc.servermessage"
-                eventData = ServerMessage(self, sender, num, args)
-                
-            elif cmd == "PRIVMSG":
-                # TODO: process privmsg
-                pass
-
-            elif cmd == "NOTICE":
-                # TODO: process notice
-                pass
-
-            elif cmd == "MODE":
-                # TODO: parse mode
-                pass
-
-            if eventName is not None:
-                event.trigger(eventName, eventData)
-
         else:
-            # Event to raise
-            eventName = None
-            eventData = None
-
-            # It is incomming command
+            sender = None
             cmd = parsed[0]
             args = parsed[1:]
-            if cmd == "PING":
-                eventName = "irc.ping"
-                eventData = Ping(self, args[0])
-            elif cmd == "ERROR":
-                eventName = "irc.error"
-                eventData = Error(self, args[0])
 
-            if eventName is not None:
-                event.trigger(eventName, eventData)
+        eventName = None
+        eventData = None
+
+        # Update user database
+        if sender is not None:
+            self.updateUser(sender)
+
+        # System message
+        if self.isNumber(cmd):
+            num = int(cmd)
+            eventName = "irc.servermessage"
+            eventData = ServerMessage(self, sender, num, args)
+
+        elif cmd == "PRIVMSG":
+            if args[0] == self.currentNick:
+                # Private message
+                eventName = "irc.privmsg"
+                eventData = PrivateMessage(self, self.lookupUser(sender), args[1])
+
+            elif args[0][0] in self.props["CHANTYPES"]:
+                # Channel message
+                eventName = "irc.chanmsg"
+                eventData = ChannelMessage(self, self.lookupUser(sender), args[0], args[1])
+
+            else:
+                self.log.warn("Unknown message recipient: %s" % args[0])
+
+            pass
+
+        elif cmd == "NOTICE":
+            # TODO: process notice
+            pass
+
+        elif cmd == "PING":
+            eventName = "irc.ping"
+            eventData = Ping(self, args[0])
+        elif cmd == "ERROR":
+            eventName = "irc.error"
+            eventData = Error(self, args[0])
+
+        if eventName is not None:
+            event.trigger(eventName, eventData)
+
+    def updateUser(self, address, oldNick=None):
+        if UserInfo.addrRe.match(address):
+            nick, user, host = UserInfo.parseAddress(address)
+        else:
+            nick = address
+            user = None
+            host = None
+
+        if oldNick is None:
+            oldNick = nick
+
+        if nick not in self.users:
+            self.users[oldNick] = UserInfo(nick, user, host)
+        else:
+            u = self.users[oldNick]
+            if nick is not None:
+                u.nick = nick
+
+            if user is not None:
+                u.user = user
+
+            if host is not None:
+                u.host = host
+
+    def lookupUser(self, address):
+        if UserInfo.addrRe.match(address):
+            nick, user, host = UserInfo.parseAddress(address)
+        else:
+            nick = address
+
+        if nick in self.users:
+            return self.users[nick]
+        else:
+            return None
+
+    def lookupChannel(self, channel):
+        if channel in self.channels:
+            return self.channels[channel]
+        else:
+            return None
 
     def connect(self):
         # Already connected...
@@ -259,6 +350,8 @@ class IrcConnection:
 
         self.registered = False
         self.props = {}
+        self.users = {}
+        self.channels = {}
 
         addresses = socket.getaddrinfo(self.hostname, self.port)
 
@@ -282,7 +375,7 @@ class IrcConnection:
         if self.password is not None:
             self.raw("PASS %s" % (self.password))
 
-        self.raw("NICK %s" % self.nicks[0])
+        self.nick(self.currentNick)
         self.raw("USER %s * * :%s" % (self.user, self.realname))
 
     def raw(self, msg):
@@ -303,7 +396,7 @@ class IrcConnection:
         self = eventData.irc
         if eventData.code == 5:
             # Parse ISUPPORT message
-            for match in re.findall("([A-Z]+)(=([^[:space:]]))?", " ".join(eventData.text[:-1])):
+            for match in re.findall("([A-Z]+)(=([^\s]+))?", " ".join(eventData.text[:-1])):
                 if match[1]:
                     self.props[match[0]] = match[2]
                 else:
@@ -319,3 +412,39 @@ class IrcConnection:
     def connected(eventData, handlerData):
         self = eventData.irc
         self.log.info("Connected!")
+
+    def join(self, channel):
+        """
+            Join channel
+        """
+        if not self.isJoined(channel):
+            self.raw("JOIN %s" % channel)
+
+    def part(self, channel, reason=""):
+        """
+            Part channel
+        """
+        if self.isJoined(channel):
+            self.raw("PART %s :%s" % (channel, reason))
+
+    def quit(self, reason=""):
+        """
+            Quit from IRC
+        """
+        self.quit("QUIT :%s" % (reason))
+
+    def nick(self, newNick):
+        """
+            Change my nick
+        """
+        self.raw("NICK %s" % newNick)
+
+    def message(self, target, message):
+        """
+            Send message
+        """
+        for line in message.split("\n"):
+            self.raw("PRIVMSG %s :%s" % target, line)
+
+    def isJoined(self, channel):
+        return self.lookupChannel(channel) is not None
