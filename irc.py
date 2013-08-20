@@ -130,7 +130,7 @@ class UserInfo:
         """
         match = UserInfo.addrRe.match(address)
         if match:
-            return (match.groups(1), match.groups(2), match.groups(3))
+            return (match.group(1), match.group(2), match.group(3))
 
 
 class ChannelInfo:
