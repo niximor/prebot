@@ -15,17 +15,19 @@
         <div class="header">
             <h1><a href="/">PreBot Admin</a></h1>
         </div>
+       
+		<div class="mainwrapper">
+	        <div class="main">
+	            {% block content %}{% endblock %}
+	        </div>
+		</div>
 
-        <div class="menu">
+		<div class="menu">
             <ul>
                 % for item in menu:
                 <li><a href="${item["uri"]}">${item["name"]}</a></li>
                 % endfor
             </ul>
-        </div>
-
-        <div class="main">
-            {% block content %}{% endblock %}
         </div>
 
         <div class="footer">
