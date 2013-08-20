@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Users</h2>
+
+<form action="/users" method="get">
+    Search: <input type="text" name="search" value="${findHostname}" /> <input type="submit" value="Go" />
+</form>
+
+<table class="list">
+    <thead>
+        <tr>
+            <th>User</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        % for user in users:
+        <tr>
+            <td>${user.name}</td>
+            <td class="actions">
+                <a href="/user.show?id=${user.id}">Details</a>
+                <a href="/users.del?id=${user.id}">&#x274C;</a>
+            </td>
+        </tr>
+        % endfor
+    </tbody>
+</table>
+
+<h3>Add new user</h3>
+<form action="/user.add" method="post">
+    <label for="name">Name:</label> <input type="text" name="name" id="name" /> <input type="submit" value="Create" />
+</form>
+
+{% endblock %}

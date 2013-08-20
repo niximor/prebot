@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>User details - ${user.name}</h2>
+
+<div style="float: left" class="column">
+    <h3>Hostnames</h3>
+    <p>List of hostnames that the user is identified by. Can contain wildcards (* = any number of any chars, ? = one any char) and are matched with increasing priority from nick to hostname.</p>
+    <table class="list">
+        <thead>
+            <tr>
+                <th>Hostname</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            % for host in user.listHostnames():
+            <tr>
+                <td>${host['host']}</td>
+                <td class="actions"><a href="/user.host.del?id=${host['id']}&amp;userid=${user.id}" title="Remove">&#x274C;</a></td>
+            </tr>
+            % endfor
+        </tbody>
+    </table>
+
+    <h4>Add hostname</h4>
+    <form action="/user.host.add?userid=${user.id}" method="post" class="form">
+        <div>
+            <label for="host">Add:</label>
+            <input type="text" name="host" id="host" />
+        </div>
+        <input type="submit" value="Add" />
+    </form>
+</div>
+
+<div style="float: left; margin-left: 3em" class="column">
+    <h3>Flags</h3>
+
+    <p>Flags are evaluated in this order: global (*/*), global channel (*/), global network (/*), specific network/channel</p>
+    <p>Flag set to false means it is forced.</p>
+
+    <table class="list">
+        <thead>
+            <tr>
+                <th>Channel</th>
+                <th>Flag</th>
+                <th>Value</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            % for flag in user.listFlags():
+            <tr>
+                <td>{% if flag['network'] %}${flag['network']}/{% endif %}${flag['channel']}</td>
+                <td>${flag['flag']}</td>
+                <td style="text-align: center; font-weight: bold;{% if flag['value'] %} color: #859900;{% else %} color: #dc322f;{% endif %}">{% if flag['value'] %}&#x2713;{% else %}&#x2717;{% endif %}</td>
+                <td class="actions"><a href="/user.host.del?id=${host['id']}&amp;userid=${user.id}" title="Remove">&#x274C;</a></td>
+            </tr>
+            % endfor
+        </tbody>
+    </table>
+
+    <h4>Add flag</h4>
+    <form action="/user.flag.add?userid=${user.id}" method="post" class="form">
+        <div>
+            <label for="channel">Channel:</label>
+            <select name="network" id="network">
+                <option value="">*</option>
+                % for network in networks:
+                <option>${network}</option>
+                % endfor
+            </select> /
+            <input type="text" name="channel" id="channel" value="*" />
+        </div>
+
+        <div>
+            <label for="flag">Flag:</label>
+            <input type="text" name="flag" size="2" id="flag" />
+        </div>
+
+        <div>
+            <label for="value">Value:</label>
+            <input type="checkbox" name="value" id="value" />
+        </div>
+
+        <input type="submit" value="Add" />
+    </form>
+</div>
+
+<h3 style="clear: both">Modify user</h3>
+<form action="/user.edit?id=${user.id}" method="post" class="form">
+    <div>
+        <label for="name">Name:</label>
+        <input type="text" name="name" value="${user.name}" />
+    </div>
+
+    <input type="submit" value="Modify" />
+</form>
+
+{% endblock %}
