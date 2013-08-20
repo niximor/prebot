@@ -23,7 +23,8 @@ def _checkArgument(arg, args, requestedType):
             currentType = type("")
 
         if currentType != requestedType:
-            raise AttributeError("%s must be %s, but is %s." % (arg, requestedType, currentType))
+            raise AttributeError("%s must be %s, but is %s." %
+                (arg, requestedType, currentType))
 
 
 class IrcServerEvent:
@@ -161,9 +162,12 @@ class IrcConnection:
             - nick - list of nicks to use, or one nick to use
 
             Additional arguments can be:
-            - port - port to use for connecting to IRC server (defaults to 6667)
-            - user - username to use when registering to network (defaults to prebot)
-            - realname - real name to use when registering to network (defaults to Prebot IRC Bot)
+            - port - port to use for connecting to IRC server
+                     (defaults to 6667)
+            - user - username to use when registering to network
+                     (defaults to prebot)
+            - realname - real name to use when registering to network
+                         (defaults to Prebot IRC Bot)
             - password - server password
         """
 
@@ -276,12 +280,14 @@ class IrcConnection:
             if args[0] == self.currentNick:
                 # Private message
                 eventName = "irc.privmsg"
-                eventData = PrivateMessage(self, self.lookupUser(sender), args[1])
+                eventData = PrivateMessage(self, self.lookupUser(sender),
+                    args[1])
 
             elif args[0][0] in self.props["CHANTYPES"]:
                 # Channel message
                 eventName = "irc.chanmsg"
-                eventData = ChannelMessage(self, self.lookupUser(sender), args[0], args[1])
+                eventData = ChannelMessage(self, self.lookupUser(sender),
+                    args[0], args[1])
 
             else:
                 self.log.warn("Unknown message recipient: %s" % args[0])
@@ -369,7 +375,10 @@ class IrcConnection:
                 self.log.info("Unable to connect: %s", str(msg))
                 continue
 
-            self.socket = SocketPool().add(self.socket, read=self.socketRead, other=self.socketExtra)
+            self.socket = SocketPool().add(
+                self.socket,
+                read=self.socketRead,
+                other=self.socketExtra)
             break
 
         if self.password is not None:
@@ -396,7 +405,9 @@ class IrcConnection:
         self = eventData.irc
         if eventData.code == 5:
             # Parse ISUPPORT message
-            for match in re.findall("([A-Z]+)(=([^\s]+))?", " ".join(eventData.text[:-1])):
+            for match in re.findall("([A-Z]+)(=([^\s]+))?",
+                " ".join(eventData.text[:-1])):
+            
                 if match[1]:
                     self.props[match[0]] = match[2]
                 else:

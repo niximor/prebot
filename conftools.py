@@ -10,11 +10,26 @@ from util import listNicks, getFirstNick, _networks
 
 def addServer(host, username, realname, port=6667, password=None, id=None):
     c = db.cursor()
-    c.execute("SELECT id, host, port FROM servers WHERE (? IS NOT NULL AND id = ?) OR (host = ? AND port = ?)", (id, id, host, port))
+    c.execute(
+        "SELECT id, host, port "
+        "FROM servers "
+        "WHERE "
+        "   (? IS NOT NULL AND id = ?) "
+        "   OR (host = ? AND port = ?)", (id, id, host, port))
     row = c.fetchone()
     if row:
         id = row["id"]
-        c.execute("UPDATE servers SET host = ?, port = ?, user = ?, realname = ?, password = ? WHERE id = ?", (host, port, username, realname, password, host, port, id))
+        c.execute(
+            "UPDATE servers "
+            "SET "
+            "   host = ?, "
+            "   port = ?, "
+            "   user = ?, "
+            "   realname = ?, "
+            "   password = ? "
+            "WHERE "
+            "   id = ?",
+            (host, port, username, realname, password, host, port, id))
 
         # If host and port changed, reconnect.
         if (row["host"] != host or row["port"] != port):
@@ -35,7 +50,11 @@ def addServer(host, username, realname, port=6667, password=None, id=None):
             )
             irc.connect()
     else:
-        c.execute("INSERT INTO servers (host, port, user, realname, password) VALUES (?, ?, ?, ?, ?)", (host, port, username, realname, password))
+        c.execute(
+            "INSERT INTO servers "
+            "(host, port, user, realname, password) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (host, port, username, realname, password))
 
         irc = IrcConnection(
             host=host,
@@ -52,11 +71,21 @@ def addServer(host, username, realname, port=6667, password=None, id=None):
 
 def enableServer(id):
     c = db.cursor()
-    c.execute("SELECT host, port FROM servers WHERE id = ? AND enabled = 0", (id, ))
+    c.execute(
+        "SELECT host, port "
+        "FROM servers "
+        "WHERE "
+        "   id = ? "
+        "   AND enabled = 0", (id, ))
 
     row = c.fetchone()
     if row:
-        c.execute("UPDATE servers SET enabled = 1 WHERE id = ?", (id, ))
+        c.execute(
+            "UPDATE servers "
+            "SET "
+            "   enabled = 1 "
+            "WHERE "
+            "   id = ?", (id, ))
         db.commit()
 
         # Connect to IRC if not connected.
@@ -67,7 +96,12 @@ def enableServer(id):
 
         if not found:
             # Connect, not connected.
-            c.execute("SELECT host, port, user, password, realname FROM servers WHERE id = ? AND enabled = 1", (id, ))
+            c.execute(
+                "SELECT host, port, user, password, realname "
+                "FROM servers "
+                "WHERE "
+                "   id = ? "
+                "   AND enabled = 1", (id, ))
             row = c.fetchone()
 
             irc = IrcConnection(
@@ -84,7 +118,12 @@ def enableServer(id):
 
 def disableServer(id):
     c = db.cursor()
-    c.execute("SELECT host, port FROM servers WHERE id = ? AND enabled = 1", (id, ))
+    c.execute(
+        "SELECT host, port "
+        "FROM servers "
+        "WHERE "
+        "   id = ? "
+        "   AND enabled = 1", (id, ))
 
     row = c.fetchone()
     if row:
@@ -122,7 +161,10 @@ def addNick(nick):
     else:
         sort = 1
 
-    c.execute("INSERT OR IGNORE INTO nicks (nick, sort) VALUES (?, ?)", (nick, sort))
+    c.execute(
+        "INSERT OR IGNORE INTO nicks "
+        "(nick, sort) "
+        "VALUES (?, ?)", (nick, sort))
     db.commit()
 
 
@@ -134,7 +176,12 @@ def delNick(nick):
     c.execute("SELECT nick FROM nicks ORDER BY sort ASC")
     sort = 1
     for row in c.fetchall():
-        c.execute("UPDATE nicks SET sort = ? WHERE nick = ?", (row["nick"], sort))
+        c.execute(
+            "UPDATE nicks "
+            "SET "
+            "   sort = ? "
+            "WHERE "
+            "   nick = ?", (row["nick"], sort))
         sort += 1
 
     db.commit()
@@ -146,8 +193,18 @@ def moveUp(nick):
     row = c.fetchone()
     if row:
         if row["sort"] > 1:
-            c.execute("UPDATE nicks SET sort = sort + 1 WHERE sort = ?", (row["sort"] - 1, ))
-            c.execute("UPDATE nicks SET sort = sort - 1 WHERE nick = ?", (nick, ))
+            c.execute(
+                "UPDATE nicks "
+                "SET "
+                "   sort = sort + 1 "
+                "WHERE "
+                "   sort = ?", (row["sort"] - 1, ))
+            c.execute(
+                "UPDATE nicks "
+                "SET "
+                "   sort = sort - 1 "
+                "WHERE "
+                "   nick = ?", (nick, ))
 
     db.commit()
 
@@ -159,7 +216,17 @@ def moveDown(nick):
     if row:
         c.execute("SELECT MAX(sort) AS sort FROM nicks")
         if row["sort"] < c.fetchone()["sort"]:
-            c.execute("UPDATE nicks SET sort = sort - 1 WHERE sort = ?", (row["sort"] + 1, ))
-            c.execute("UPDATE nicks SET sort = sort + 1 WHERE nick = ?", (nick, ))
+            c.execute(
+                "UPDATE nicks "
+                "SET "
+                "   sort = sort - 1 "
+                "WHERE "
+                "   sort = ?", (row["sort"] + 1, ))
+            c.execute(
+                "UPDATE nicks "
+                "SET "
+                "   sort = sort + 1 "
+                "WHERE "
+                "   nick = ?", (nick, ))
 
     db.commit()

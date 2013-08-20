@@ -28,7 +28,13 @@ def shutdown():
 
 def main():
     handler = logging.StreamHandler(stream=sys.stderr)
-    handler.setFormatter(logging.Formatter("%(asctime)s [%(process)s] %(name)s %(levelname)s: %(message)s {%(filename)s:%(lineno)d}"))
+    handler.setFormatter(logging.Formatter(
+      "%(asctime)s "
+      "[%(process)s] "
+      "%(name)s "
+      "%(levelname)s: "
+      "%(message)s "
+      "{%(filename)s:%(lineno)d}"))
     logging.root.addHandler(handler)
     logging.root.setLevel(logging.DEBUG)
 
@@ -67,7 +73,10 @@ def main():
 
     nick = getFirstNick()
     if nick is not None:
-        c.execute("SELECT host, port, user, password, realname FROM servers WHERE enabled = 1")
+        c.execute(
+          "SELECT host, port, user, password, realname "
+          "FROM servers "
+          "WHERE enabled = 1")
         gotServer = False
         for row in c.fetchall():
             # Connect to IRC to all specified networks.

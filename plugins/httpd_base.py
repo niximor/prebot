@@ -97,7 +97,10 @@ def nick_add(req):
 def servers(req):
     servers = []
     c = db.cursor()
-    c.execute("SELECT id, host, port, user, password, realname, enabled FROM servers ORDER BY host ASC, port ASC")
+    c.execute(
+        "SELECT id, host, port, user, password, realname, enabled "
+        "FROM servers "
+        "ORDER BY host ASC, port ASC")
     for row in c.fetchall():
         row["status"] = ""
 

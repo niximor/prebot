@@ -11,7 +11,12 @@ from util import _networks
 
 def init():
     c = db.cursor()
-    c.execute("CREATE TABLE IF NOT EXISTS autojoin (network TEXT NULL DEFAULT NULL, channel TEXT, UNIQUE (network, channel));")
+    c.execute(
+        "CREATE TABLE IF NOT EXISTS autojoin ("
+        "   network TEXT NULL DEFAULT NULL, "
+        "   channel TEXT, "
+        "   UNIQUE (network, channel)"
+        ")")
     db.commit()
 
 
@@ -20,7 +25,13 @@ def onConnect(eventData, handlerData):
     irc = eventData.irc
 
     c = db.cursor()
-    c.execute("SELECT channel FROM autojoin WHERE network IS NULL OR network = ?", (eventData.irc.networkName, ))
+    c.execute(
+        "SELECT channel "
+        "FROM autojoin "
+        "WHERE "
+        "   network IS NULL "
+        "   OR network = ?", (eventData.irc.networkName, ))
+
     for row in c.fetchall():
         irc.join(row["channel"])
 
@@ -36,7 +47,13 @@ def web_main(req):
     # List current channels
     channels = []
     c = db.cursor()
-    c.execute("SELECT channel, network FROM autojoin ORDER BY network ASC, channel ASC")
+    c.execute(
+        "SELECT channel, network "
+        "FROM autojoin "
+        "ORDER BY "
+        "   network ASC, "
+        "   channel ASC")
+
     for row in c.fetchall():
         channels.append(row)
 
@@ -55,11 +72,16 @@ def web_add(req):
         network = None
 
     c = db.cursor()
-    c.execute("INSERT OR IGNORE INTO autojoin (network, channel) VALUES (?, ?)", (network, channel))
+    c.execute(
+        "INSERT OR IGNORE INTO autojoin "
+        "(network, channel) "
+        "VALUES (?, ?)", (network, channel))
     db.commit()
 
     for irc in _networks:
-        if irc.registered and (network is None or irc.networkName == network) and not irc.isJoined(channel):
+        if irc.registered \
+        and (network is None or irc.networkName == network) \
+        and not irc.isJoined(channel):
             irc.join(channel)
 
     req.redirect("/autojoin")
@@ -74,10 +96,20 @@ def web_remove(req):
         network = None
 
     c = db.cursor()
+    
     if network is not None:
-        c.execute("DELETE FROM autojoin WHERE network = ? AND channel = ?", (network, channel))
+        c.execute(
+            "DELETE FROM autojoin "
+            "WHERE "
+            "   network = ? "
+            "   AND channel = ?", (network, channel))
     else:
-        c.execute("DELETE FROM autojoin WHERE channel = ? AND network IS NULL", (channel, ))
+        c.execute(
+            "DELETE FROM autojoin "
+            "WHERE "
+            "   channel = ? "
+            "   AND network IS NULL", (channel, ))
+
     db.commit()
     req.redirect("/autojoin")
 

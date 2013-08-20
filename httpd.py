@@ -48,7 +48,10 @@ class PersistentStorage:
 
     @staticmethod
     def __getId():
-        return "".join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(32))
+        return "".join(random.choice(
+            string.ascii_uppercase
+            + string.ascii_lowercase
+            + string.digits) for x in range(32))
 
     def store(self, data):
         id = None
@@ -217,10 +220,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not found.")
 
     def log_error(self, format, *args):
-        logging.getLogger(__name__).error("%s - %s" % (self.client_address[0], format % args))
+        logging.getLogger(__name__).error("%s - %s" %
+            (self.client_address[0], format % args))
 
     def log_request(self, code='-', size='-'):
-        logging.getLogger(__name__).info("%s - %s %s %s" % (self.client_address[0], self.requestline, str(code), str(size)))
+        logging.getLogger(__name__).info("%s - %s %s %s" %
+            (self.client_address[0], self.requestline, str(code), str(size)))
 
 
 class HTTPServer(SocketServer.TCPServer):

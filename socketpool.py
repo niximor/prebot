@@ -27,7 +27,8 @@ class SocketAction:
 
     def run(self):
         """
-            Called by pool when socket action can be performed (socket can be written).
+            Called by pool when socket action can be performed
+            (socket can be written).
         """
         return True
 
