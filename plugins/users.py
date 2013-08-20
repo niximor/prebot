@@ -75,7 +75,14 @@ class User:
 
     def hasHostname(self, nick, user, host):
         c = db.cursor()
-        c.execute("SELECT 1 FROM user_hosts WHERE user_id = ? AND ? LIKE nick AND ? LIKE user AND ? LIKE host", (self.id, nick, user, host))
+        c.execute(
+            "SELECT 1 "
+            "FROM user_hosts "
+            "WHERE "
+            "   user_id = ? "
+            "   AND ? LIKE nick "
+            "   AND ? LIKE user "
+            "   AND ? LIKE host", (self.id, nick, user, host))
         row = c.fetchone()
         if row:
             return True
@@ -85,7 +92,6 @@ class User:
     def hasFlag(self, flag, channel=None, network=None):
         c = db.cursor()
 
-        query = "SELECT value FROM user_flags WHERE user_id = ? AND flag = ? AND " + condChannel + " AND " + condNetwork
         queryValues = [self.id, flag]
 
         if channel is not None:
@@ -100,7 +106,15 @@ class User:
         else:
             condNetwork = "(network IS NULL)"
 
-        query += " ORDER BY network DESC, channel DESC LIMIT 1"
+        query = \
+            "SELECT value " \
+            "FROM user_flags " \
+            "WHERE " \
+            "   user_id = ? " \
+            "   AND flag = ? " \
+            "   AND " + condChannel + \
+            "   AND " + condNetwork + " " \
+            "ORDER BY network DESC, channel DESC LIMIT 1"
 
         c.execute(query, tuple(queryValues))
         row = c.fetchone()
@@ -111,15 +125,27 @@ class User:
 
     @staticmethod
     def _wildcardToLike(str):
-        return str.replace("%", "%%").replace("_", "__").replace("*", "%").replace("?", "_")
+        return str \
+            .replace("%", "%%") \
+            .replace("_", "__") \
+            .replace("*", "%") \
+            .replace("?", "_")
 
     @staticmethod
     def _likeToWildcard(str):
-        return str.replace("%", "*").replace("_", "?").replace("??", "_").replace("**", "%")
+        return str \
+            .replace("%", "*") \
+            .replace("_", "?") \
+            .replace("??", "_") \
+            .replace("**", "%")
 
     def listHostnames(self):
         c = db.cursor()
-        c.execute("SELECT id, nick, user, host FROM user_hosts WHERE user_id = ?", (self.id, ))
+        c.execute(
+            "SELECT id, nick, user, host "
+            "FROM user_hosts "
+            "WHERE "
+            "   user_id = ?", (self.id, ))
         return [{
             "id": row["id"],
             "host": "%s!%s@%s" % (
@@ -130,7 +156,10 @@ class User:
 
     def addHostname(self, nick, user, host):
         c = db.cursor()
-        c.execute("INSERT INTO user_hosts (user_id, nick, user, host) VALUES (?, ?, ?, ?)", (
+        c.execute(
+            "INSERT INTO user_hosts "
+            "(user_id, nick, user, host) "
+            "VALUES (?, ?, ?, ?)", (
             self.id,
             self._wildcardToLike(nick),
             self._wildcardToLike(user),
@@ -139,17 +168,37 @@ class User:
 
     def modifyHostname(self, id, nick, user, host):
         c = db.cursor()
-        c.execute("UPDATE user_hosts SET nick = ?, user = ?, host = ? WHERE id = ? AND user_id = ?", (nick, user, host, id, self.id))
+        c.execute(
+            "UPDATE user_hosts "
+            "SET "
+            "   nick = ?, "
+            "   user = ?, "
+            "   host = ? "
+            "WHERE "
+            "   id = ? "
+            "   AND user_id = ?", (nick, user, host, id, self.id))
         db.commit()
 
     def delHostname(self, id):
         c = db.cursor()
-        c.execute("DELETE FROM user_hosts WHERE id = ? AND user_id = ?", (id, self.id))
+        c.execute(
+            "DELETE FROM user_hosts "
+            "WHERE "
+            "   id = ? "
+            "   AND user_id = ?", (id, self.id))
         db.commit()
 
     def listFlags(self):
         c = db.cursor()
-        c.execute("SELECT id, network, channel, flag, value FROM user_flags WHERE user_id = ? ORDER BY network ASC, channel ASC, flag ASC", (self.id, ))
+        c.execute(
+            "SELECT id, network, channel, flag, value "
+            "FROM user_flags "
+            "WHERE "
+            "   user_id = ? "
+            "ORDER BY "
+            "   network ASC, "
+            "   channel ASC, "
+            "   flag ASC", (self.id, ))
         return [{
             "id": row["id"],
             "network": row["network"],
@@ -160,7 +209,10 @@ class User:
 
     def setFlag(self, flag, value, channel=None, network=None):
         c = db.cursor()
-        c.execute("INSERT OR REPLACE INTO user_flags (user_id, flag, value, network, channel) VALUES (?, ?, ?, ?, ?)", (
+        c.execute(
+            "INSERT OR REPLACE INTO user_flags "
+            "   (user_id, flag, value, network, channel) "
+            "   VALUES (?, ?, ?, ?, ?)", (
             self.id,
             flag,
             1 if value else 0,
@@ -168,9 +220,22 @@ class User:
             channel))
         db.commit()
 
+    def toggleFlag(self, id):
+        c = db.cursor()
+        c.execute("UPDATE user_flags "
+            "SET value = (value + 1) % 2 "
+            "WHERE "
+            "   id = ? "
+            "   AND user_id = ?", (id, self.id))
+        db.commit()
+
     def remFlag(self, id):
         c = db.cursor()
-        c.execute("DELETE FROM user_flags WHERE id = ? AND user_id = ?", (id, self.id))
+        c.execute(
+            "DELETE FROM user_flags "
+            "WHERE "
+            "   id = ? "
+            "   AND user_id = ?", (id, self.id))
         db.commit()
 
     @staticmethod
@@ -188,7 +253,19 @@ class User:
     @staticmethod
     def findByHost(nick, user, host):
         c = db.cursor()
-        c.execute("SELECT u.id AS id, u.name AS name, u.password AS password FROM user_hosts uh LEFT JOIN users u ON (u.id = uh.user_id) WHERE ? LIKE nick AND ? LIKE user AND ? LIKE host ORDER BY user_calcWeight(nick, 200) + user_calcWeight(user, 100) + user_calcWeight(password, 1) DESC LIMIT 1", (self.id, nick, user, host))
+        c.execute(
+            "SELECT u.id AS id, u.name AS name, u.password AS password "
+            "FROM user_hosts uh "
+            "LEFT JOIN users u ON (u.id = uh.user_id) "
+            "WHERE "
+            "   ? LIKE nick "
+            "   AND ? LIKE user "
+            "   AND ? LIKE host "
+            "ORDER BY "
+            "   user_calcWeight(nick, 200) "
+            "   + user_calcWeight(user, 100) "
+            "   + user_calcWeight(password, 1) DESC "
+            "LIMIT 1", (self.id, nick, user, host))
         row = c.fetchone()
         if row:
             u = User()
@@ -301,7 +378,12 @@ def web_user_edit(req):
     name = req.post.getfirst("name")
 
     c = db.cursor()
-    c.execute("UPDATE users SET name = ? WHERE id = ?", (id, name))
+    c.execute(
+        "UPDATE users "
+        "SET "
+        "   name = ? "
+        "WHERE "
+        "   id = ?", (name, id))
     db.commit()
 
     req.redirect("/user.show?id=%d" % id)
@@ -314,10 +396,23 @@ def web_host_add(req):
 
     u = User.findById(userId)
 
-    nick, user, host = UserInfo.parseAddress(host)
-    u.addHostname(nick, user, host)
+    if u is not None:
+        nick, user, host = UserInfo.parseAddress(host)
+        u.addHostname(nick, user, host)
 
     req.redirect("/user.show?id=%d" % userId)
+
+
+@get("/user.host.del")
+def web_host_del(req):
+	userId = int(req.get.getfirst("userid"))
+	id = int(req.get.getfirst("id"))
+
+	u = User.findById(userId)
+	if u is not None:
+		u.delHostname(id)
+
+	req.redirect("/user.show?id=%d" % userId)
 
 
 @post("/user.flag.add")
@@ -339,8 +434,32 @@ def web_flag_add(req):
     value = True if req.post.getfirst("value") is not None else False
 
     u = User.findById(userId)
-    if u:
+    if u is not None:
         u.setFlag(flag, value, network=network, channel=channel)
+
+    req.redirect("/user.show?id=%d" % userId)
+
+
+@get("/user.flag.toggle")
+def web_flag_toggle(req):
+    userId = int(req.get.getfirst("userid"))
+    id = int(req.get.getfirst("id"))
+
+    u = User.findById(userId)
+    if u is not None:
+        u.toggleFlag(id)
+
+    req.redirect("/user.show?id=%d" % userId)
+
+
+@get("/user.flag.del")
+def web_flag_del(req):
+    userId = int(req.get.getfirst("userid"))
+    id = int(req.get.getfirst("id"))
+
+    u = User.findById(userId)
+    if u is not None:
+        u.remFlag(id)
 
     req.redirect("/user.show?id=%d" % userId)
 
