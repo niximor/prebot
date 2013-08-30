@@ -121,7 +121,7 @@ class User:
         if row:
             return True if row["value"] == 1 else False
         else:
-            return False
+            return None
 
     @staticmethod
     def _wildcardToLike(str):
@@ -277,12 +277,30 @@ class User:
 
 @handler("irc.join")
 def ev_join(eventData, handlerData):
-    pass
+    u = User.findByHost(eventData.sender)
+    if u:
+        # autoop
+        if u.hasFlag("o", channel=eventData.channel, network=eventData.irc.networkName):
+            eventData.irc.mode("%s +o %s" % (eventData.channel, eventData.sender.nick))
+
+        # autohalfop
+        elif u.hasFlag("h", channel=eventData.channel, network=eventData.irc.networkName):
+            eventData.irc.mode("%s +h %s" % (eventData.channel, eventData.sender.nick))
+
+        # autovoice
+        elif u.hasFlag("v", channel=eventData.channel, network=eventData.irc.networkName):
+            eventData.irc.mode("%s +v %s" % (eventData.channel, eventData.sender.nick))
 
 
 @handler("irc.op")
 def ev_op(eventData, handlerData):
-    pass
+    # Test if user can have op.
+    u = User.findByHost(eventData.sender)
+    if u:
+        if u.hasFlag("o") == False:
+            # User cannot have op, test who opped.
+            
+            eventData.irc.mode("%s -o %s" % (eventData.channel, eventData.sender.nick))
 
 
 @handler("irc.deop")

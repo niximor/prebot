@@ -39,16 +39,19 @@ def addServer(host, username, realname, port=6667, password=None, id=None):
                     irc.quit("Changing servers...")
                     _networks.remove(irc)
 
-            # Create new one.
-            irc = IrcConnection(
-                host=host,
-                port=port,
-                nick=getFirstNick(),
-                user=username,
-                realname=realname,
-                password=password
-            )
-            irc.connect()
+            nick = getFirstNick()
+
+            if nick is not None:
+                # Create new one.
+                irc = IrcConnection(
+                    host=host,
+                    port=port,
+                    nick=nick,
+                    user=username,
+                    realname=realname,
+                    password=password
+                )
+                irc.connect()
     else:
         c.execute(
             "INSERT INTO servers "
@@ -56,15 +59,17 @@ def addServer(host, username, realname, port=6667, password=None, id=None):
             "VALUES (?, ?, ?, ?, ?)",
             (host, port, username, realname, password))
 
-        irc = IrcConnection(
-            host=host,
-            port=port,
-            nick=getFirstNick(),
-            user=username,
-            realname=realname,
-            password=password
-        )
-        irc.connect()
+        nick = getFirstNick()
+        if nick is not None:
+            irc = IrcConnection(
+                host=host,
+                port=port,
+                nick=nick,
+                user=username,
+                realname=realname,
+                password=password
+            )
+            irc.connect()
 
     db.commit()
 
@@ -104,16 +109,18 @@ def enableServer(id):
                 "   AND enabled = 1", (id, ))
             row = c.fetchone()
 
-            irc = IrcConnection(
-                host=row["host"],
-                port=row["port"],
-                nick=getFirstNick(),
-                user=row["user"],
-                realname=row["realname"],
-                password=row["password"]
-            )
+            nick = getFirstNick()
+            if nick is not None:
+                irc = IrcConnection(
+                    host=row["host"],
+                    port=row["port"],
+                    nick=nick,
+                    user=row["user"],
+                    realname=row["realname"],
+                    password=row["password"]
+                )
 
-            irc.connect()
+                irc.connect()
 
 
 def disableServer(id):

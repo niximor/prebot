@@ -6,7 +6,8 @@
 from types import *
 import socket
 import logging
-import event
+import event as e
+from src import event as event
 from socketpool import SocketPool
 import re
 from util import _networks
@@ -25,88 +26,6 @@ def _checkArgument(arg, args, requestedType):
         if currentType != requestedType:
             raise AttributeError("%s must be %s, but is %s." %
                 (arg, requestedType, currentType))
-
-
-class IrcServerEvent:
-    def __init__(self, irc):
-        self.irc = irc
-
-
-class RawReceive(IrcServerEvent):
-    def __init__(self, irc, line):
-        IrcServerEvent.__init__(self, irc)
-        self.line = line
-
-
-class RawSend(IrcServerEvent):
-    def __init__(self, irc, line):
-        IrcServerEvent.__init__(self, irc)
-        self.line = line
-
-
-class ServerMessage(IrcServerEvent):
-    def __init__(self, irc, sender, code, text):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.code = code
-        self.text = text
-
-
-class Ping(IrcServerEvent):
-    def __init__(self, irc, sender):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-
-
-class Error(IrcServerEvent):
-    def __init__(self, irc, reason):
-        IrcServerEvent.__init__(self, irc)
-        self.reason = reason
-
-
-class ChannelMessage(IrcServerEvent):
-    def __init__(self, irc, sender, channel, text):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.channel = channel
-        self.text = text
-
-
-class PrivateMessage(IrcServerEvent):
-    def __init__(self, irc, sender, text):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.text = text
-
-
-class Join(IrcServerEvent):
-    def __init__(self, irc, sender, channel):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.channel = channel
-
-
-class Part(IrcServerEvent):
-    def __init__(self, irc, sender, channel, reason):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.channel = channel
-        self.reason = reason
-
-
-class Quit(IrcServerEvent):
-    def __init__(self, irc, sender, reason):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.reason = reason
-
-class Disconnected(IrcServerEvent):
-    def __init__(self, irc):
-        IrcServerEvent.__init__(self, irc)
-
-class Connected(IrcServerEvent):
-    def __init__(self, irc):
-        IrcServerEvent.__init__(self, irc)
 
 
 class UserInfo:
@@ -223,7 +142,7 @@ class IrcConnection:
                 break
 
             self.log.debug(">>> %s", line)
-            event.trigger("irc.rawreceive", RawReceive(self, line))
+            event.trigger("irc.rawreceive", e.RawReceive(self, line))
             self.processLine(line)
 
     def socketExtra(self, socket):
@@ -233,7 +152,7 @@ class IrcConnection:
         self.connected = False
         self.registered = False
 
-        event.trigger("irc.disconnected", Disconnected(self))
+        event.trigger("irc.disconnected", e.Disconnected(self))
 
     def parseLine(self, line):
         pos = line.find(" :")
@@ -274,36 +193,45 @@ class IrcConnection:
         if self.isNumber(cmd):
             num = int(cmd)
             eventName = "irc.servermessage"
-            eventData = ServerMessage(self, sender, num, args)
+            eventData = e.ServerMessage(self, sender, num, args)
 
         elif cmd == "PRIVMSG":
             if args[0] == self.currentNick:
                 # Private message
                 eventName = "irc.privmsg"
-                eventData = PrivateMessage(self, self.lookupUser(sender),
+                eventData = e.PrivateMessage(self, self.lookupUser(sender),
                     args[1])
 
             elif args[0][0] in self.props["CHANTYPES"]:
                 # Channel message
                 eventName = "irc.chanmsg"
-                eventData = ChannelMessage(self, self.lookupUser(sender),
+                eventData = e.ChannelMessage(self, self.lookupUser(sender),
                     args[0], args[1])
 
             else:
                 self.log.warn("Unknown message recipient: %s" % args[0])
 
-            pass
-
         elif cmd == "NOTICE":
             # TODO: process notice
             pass
 
+        elif cmd == "MODE":
+            # Parse mode string
+            target = args[0]
+            if target in self.channels:
+                eventName = "irc.channelmode"
+                eventData = e.ChannelMode(self, target, args[1])
+            else:
+                eventName = "irc.usermode"
+                eventData = e.UserMode(self, args[0])
+
         elif cmd == "PING":
             eventName = "irc.ping"
-            eventData = Ping(self, args[0])
+            eventData = e.Ping(self, args[0])
+            
         elif cmd == "ERROR":
             eventName = "irc.error"
-            eventData = Error(self, args[0])
+            eventData = e.Error(self, args[0])
 
         if eventName is not None:
             event.trigger(eventName, eventData)
@@ -362,21 +290,20 @@ class IrcConnection:
         addresses = socket.getaddrinfo(self.hostname, self.port)
 
         for family, _, _, _, addr in addresses:
-            self.socket = socket.socket(family)
+            sock = socket.socket(family)
 
             try:
                 self.log.info("Connecting to %s:%s", addr[0], addr[1])
-                self.socket.connect(addr)
+                sock.connect(addr)
                 self.connected = True
                 self.log.info("Connected.")
             except socket.error, msg:
-                self.socket.close()
-                self.socket = None
+                sock.close()
                 self.log.info("Unable to connect: %s", str(msg))
                 continue
 
             self.socket = SocketPool().add(
-                self.socket,
+                sock,
                 read=self.socketRead,
                 other=self.socketExtra)
             break
@@ -389,7 +316,7 @@ class IrcConnection:
 
     def raw(self, msg):
         self.log.debug("<<< %s", msg)
-        event.trigger("irc.rawsend", RawSend(self, msg))
+        event.trigger("irc.rawsend", e.RawSend(self, msg))
         self.socket.enqueue("%s\r\n" % msg)
 
     @property

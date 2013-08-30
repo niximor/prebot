@@ -42,6 +42,8 @@ def main():
 
     log.info("Starting...")
 
+    SocketPool()
+
     # Load modules
     m = Modules()
     pluginPath = os.path.normpath("plugins")

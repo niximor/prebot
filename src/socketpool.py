@@ -39,14 +39,16 @@ class WriteAction(SocketAction):
         self._data = data
 
     def run(self):
+
         bytes = self._socket.send(self._data)
 
-        log = logging.getLogger(__name__)
+        #log = logging.getLogger(__name__)
         #log.debug("<<< %s", self._data[0:bytes])
 
         if bytes == len(self._data):
             return True
         else:
+            self._data = self._data[bytes:]
             return False
 
 
@@ -58,6 +60,7 @@ class CloseAction(SocketAction):
 
 class PoolSocket:
     def __init__(self, socket, rdcall=None, wrcall=None, othercall=None):
+        logging.getLogger(__name__).debug("Socket created.")
         self._socket = socket
         self._socket.setblocking(0)
         self.rdcall = rdcall
@@ -70,6 +73,7 @@ class PoolSocket:
         return self._socket.fileno()
 
     def enqueue(self, data):
+        logging.getLogger(__name__).debug("Enqueue: %s" % data)
         self.queue.append(WriteAction(self._socket, data))
 
     def readLine(self):
@@ -141,6 +145,7 @@ class SocketPool:
     __metaclass__ = Singleton
 
     def __init__(self):
+        logging.getLogger(__name__).debug("Socketpool initialized.")
         self.sockets = {}
         
     def add(self, socket, read=None, write=None, other=None):
@@ -185,10 +190,13 @@ class SocketPool:
             rd, wr, oth = select.select(rdsock, wrsock, othersock, timeout)
 
             for sock in rd:
+                logging.getLogger(__name__).debug("Got rd")
                 sock.callRead()
 
             for sock in wr:
+                logging.getLogger(__name__).debug("Got wr")
                 sock.callWrite()
 
             for sock in oth:
+                logging.getLogger(__name__).debug("Got other")
                 sock.callOther()

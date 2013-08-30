@@ -59,7 +59,7 @@
 			<tbody>
 				% for flag in user.listFlags():
 				<tr>
-					<td>{% if flag['network'] %}${flag['network']}/{% endif %}${flag['channel']}</td>
+					<td>{% if flag['network'] %}${flag['network']}/{% endif %}{% if flag['channel'] %}${flag['channel']}{% else %}*{% endif %}</td>
 					<td>${flag['flag']}</td>
 					<td class="actions" style="text-align: center; font-weight: bold;"><a href="/user.flag.toggle?userid=${user.id}&amp;id=${flag['id']}" style="{% if flag['value'] %}color: #859900;{% else %}color: #dc322f;{% endif %}" title="Toggle flag">{% if flag['value'] %}&#x2713;{% else %}&#x2717;{% endif %}</a></td>
 					<td class="actions"><a href="/user.flag.del?id=${flag['id']}&amp;userid=${user.id}" title="Remove">&#x274C;</a></td>
