@@ -3,7 +3,7 @@
 # (c) Michal Kuchta 2013
 #
 
-from event import handler
+from src.event import handler
 
 @handler("irc.ping")
 def pingReply(eventData, handlerData):

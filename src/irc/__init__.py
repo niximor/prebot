@@ -8,9 +8,9 @@ import socket
 import logging
 import event as e
 from src import event as event
-from socketpool import SocketPool
+from src.socketpool import SocketPool
 import re
-from util import _networks
+from src.util import _networks
 
 
 def _checkArgument(arg, args, requestedType):
@@ -187,7 +187,7 @@ class IrcConnection:
 
         # Update user database
         if sender is not None:
-            self.updateUser(sender)
+            sender = self.updateUser(sender)
 
         # System message
         if self.isNumber(cmd):
@@ -199,14 +199,12 @@ class IrcConnection:
             if args[0] == self.currentNick:
                 # Private message
                 eventName = "irc.privmsg"
-                eventData = e.PrivateMessage(self, self.lookupUser(sender),
-                    args[1])
+                eventData = e.PrivateMessage(self, sender, args[1])
 
             elif args[0][0] in self.props["CHANTYPES"]:
                 # Channel message
                 eventName = "irc.chanmsg"
-                eventData = e.ChannelMessage(self, self.lookupUser(sender),
-                    args[0], args[1])
+                eventData = e.ChannelMessage(self, sender, args[0], args[1])
 
             else:
                 self.log.warn("Unknown message recipient: %s" % args[0])
@@ -215,15 +213,26 @@ class IrcConnection:
             # TODO: process notice
             pass
 
+        elif cmd == "JOIN":
+            # Parse join on channel
+            if sender.nick == self.currentNick:
+                eventName = "irc.joined"
+                channel = args[0]
+                self.channels[channel] = ChannelInfo(channel)
+            else:
+                eventName = "irc.join"
+
+            eventData = e.Join(self, sender, args[0])
+
         elif cmd == "MODE":
             # Parse mode string
             target = args[0]
             if target in self.channels:
                 eventName = "irc.channelmode"
-                eventData = e.ChannelMode(self, target, args[1])
+                eventData = e.ChannelMode(self, args[0], target, args[1])
             else:
                 eventName = "irc.usermode"
-                eventData = e.UserMode(self, args[0])
+                eventData = e.UserMode(self, args[0], args[1])
 
         elif cmd == "PING":
             eventName = "irc.ping"
@@ -249,6 +258,8 @@ class IrcConnection:
 
         if nick not in self.users:
             self.users[oldNick] = UserInfo(nick, user, host)
+
+            return self.users[oldNick]
         else:
             u = self.users[oldNick]
             if nick is not None:
@@ -259,6 +270,8 @@ class IrcConnection:
 
             if host is not None:
                 u.host = host
+
+            return u
 
     def lookupUser(self, address):
         if UserInfo.addrRe.match(address):
@@ -286,6 +299,7 @@ class IrcConnection:
         self.props = {}
         self.users = {}
         self.channels = {}
+        self.socket = None
 
         addresses = socket.getaddrinfo(self.hostname, self.port)
 
@@ -307,6 +321,10 @@ class IrcConnection:
                 read=self.socketRead,
                 other=self.socketExtra)
             break
+
+        if not self.socket:
+            event.trigger("irc.disconnected", e.Disconnected(self))
+            return
 
         if self.password is not None:
             self.raw("PASS %s" % (self.password))
@@ -343,20 +361,20 @@ class IrcConnection:
         elif eventData.code == 251:
             if not self.registered:
                 self.registered = True
-                event.trigger("irc.connected", Connected(eventData.irc))
+                event.trigger("irc.connected", e.Connected(eventData.irc))
 
     @staticmethod
     @event.handler("irc.connected")
     def connected(eventData, handlerData):
         self = eventData.irc
-        self.log.info("Connected!")
+        self.log.info("Registered on IRC.")
 
     def join(self, channel):
         """
             Join channel
         """
         if not self.isJoined(channel):
-            self.raw("JOIN %s" % channel)
+            self.raw("JOIN %s" % (channel, ))
 
     def part(self, channel, reason=""):
         """
@@ -369,20 +387,20 @@ class IrcConnection:
         """
             Quit from IRC
         """
-        self.quit("QUIT :%s" % (reason))
+        self.quit("QUIT :%s" % (reason, ))
 
     def nick(self, newNick):
         """
             Change my nick
         """
-        self.raw("NICK %s" % newNick)
+        self.raw("NICK %s" % (newNick, ))
 
     def message(self, target, message):
         """
             Send message
         """
         for line in message.split("\n"):
-            self.raw("PRIVMSG %s :%s" % target, line)
+            self.raw("PRIVMSG %s :%s" % (target, line))
 
     def isJoined(self, channel):
         return self.lookupChannel(channel) is not None

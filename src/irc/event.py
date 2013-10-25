@@ -35,19 +35,31 @@ class Error(IrcServerEvent):
         self.reason = reason
 
 
-class ChannelMessage(IrcServerEvent):
+class Message(IrcServerEvent):
+	def __init__(self, irc, sender, channel, text):
+		IrcServerEvent.__init__(self, irc)
+		self.sender = sender
+		self.channel = channel
+		self.text = text
+
+	def send(self, msg):
+		if self.channel is not None:
+			self.irc.message(self.channel, msg)
+		else:
+			self.irc.message(self.sender.nick, msg)
+
+	def reply(self, msg):
+		self.send("%s: %s" % (self.sender.nick, msg))
+
+
+class ChannelMessage(Message):
     def __init__(self, irc, sender, channel, text):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.channel = channel
-        self.text = text
+        Message.__init__(self, irc, sender, channel, text)
 
 
-class PrivateMessage(IrcServerEvent):
+class PrivateMessage(Message):
     def __init__(self, irc, sender, text):
-        IrcServerEvent.__init__(self, irc)
-        self.sender = sender
-        self.text = text
+        Message.__init__(self, irc, sender, None, text)
 
 
 class Join(IrcServerEvent):

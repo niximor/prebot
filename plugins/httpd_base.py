@@ -3,12 +3,12 @@
 # (c) Michal Kuchta 2013
 #
 
-from httpd import get, post, menulink, Request, RequestHandler
-import event
-from storage import db
-import util
-import modules
-import conftools
+from src.httpd import get, post, menulink, Request, RequestHandler
+import src.event as event
+from src.storage import db
+import src.util as util
+import src.modules as modules
+import src.conftools as conftools
 
 
 def cleanModule(modName):

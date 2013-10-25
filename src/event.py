@@ -6,7 +6,6 @@
 import logging
 from singleton import Singleton
 
-
 class Events:
     __metaclass__ = Singleton
 
@@ -82,12 +81,12 @@ def poll():
     ev.poll()
 
 
-def handler(event):
+def handler(event, **kwargs):
     """
         Decorator
     """
     def wrapper(f):
         ev = Events()
-        ev.register(event, f)
+        ev.register(event, f, kwargs)
         return f
     return wrapper

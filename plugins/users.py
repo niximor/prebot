@@ -3,29 +3,35 @@
 # (c) Michal Kuchta 2013
 #
 
-from event import handler
-from storage import db
-from httpd import menulink, get, post
-from util import _networks
+from src.event import handler
+from src.storage import db
+from src.httpd import menulink, get, post
+from src.util import _networks
+from src.irc import UserInfo
 import logging
-from irc import UserInfo
 
-
-def _calcWeight(str, weight):
+def _calcWeight(s, weight):
     """
         Calculate weight of one hostname part for the user.
     """
 
-    # remove quoted wildcard chars, does not meen a difference.
-    str = str.replace("%%", "-").replace("__", "-")
+    try:
+        if s is None:
+            s = ""
 
-    # calc wildcards
-    wc = str.count("%") + str.count("_")
-    if wc > 10:
-        wc = 10
+        # remove quoted wildcard chars, does not meen a difference.
+        s = s.replace("%%", "-").replace("__", "-")
 
-    # calc other chars
-    return float(len(str) - wc) * float(weight) + (wc / 10.0)
+        # calc wildcards
+        wc = s.count("%") + s.count("_")
+        if wc > 10:
+            wc = 10
+
+        # calc other chars
+        return float(len(s) - wc) * float(weight) + (wc / 10.0)
+    except Exception, e:
+        logging.getLogger(__name__).exception(e)
+        raise
 
 
 def init():
@@ -251,7 +257,7 @@ class User:
             return None
 
     @staticmethod
-    def findByHost(nick, user, host):
+    def findByHost(sender):
         c = db.cursor()
         c.execute(
             "SELECT u.id AS id, u.name AS name, u.password AS password "
@@ -265,7 +271,7 @@ class User:
             "   user_calcWeight(nick, 200) "
             "   + user_calcWeight(user, 100) "
             "   + user_calcWeight(password, 1) DESC "
-            "LIMIT 1", (self.id, nick, user, host))
+            "LIMIT 1", (sender.nick, sender.user, sender.host))
         row = c.fetchone()
         if row:
             u = User()

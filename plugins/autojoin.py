@@ -3,10 +3,10 @@
 # (c) Michal Kuchta 2013
 #
 
-from event import handler
-from storage import db
-from httpd import get, post, menulink
-from util import _networks
+from src.event import handler
+from src.storage import db
+from src.httpd import get, post, menulink
+from src.util import _networks
 
 
 def init():

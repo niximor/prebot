@@ -8,10 +8,8 @@ import SocketServer
 from socketpool import SocketPool
 import logging
 import urlparse
-import util
 from jinja2 import Environment, FileSystemLoader, contextfunction, Undefined
 from jinja2.utils import missing
-from StringIO import StringIO
 import string
 import random
 

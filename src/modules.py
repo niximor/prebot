@@ -53,7 +53,7 @@ class Modules:
 
         # Only load plugins from specified folder.
         oldpath = sys.path
-        sys.path = ["plugins", "."]
+        sys.path = ["plugins"]
 
         try:
             event.trigger("module.loading", modName)
