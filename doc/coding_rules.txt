@@ -1,0 +1,63 @@
+Each larger project must have it's coding rules to maintain same style
+across all source files. So here are rules for ircbot.
+
+- tab size: 4
+- use tabs for indent
+- max. 80 columns, no exceptions (only Makefiles can be longer)
+- each method must have doxygen-style comment with all attributes and return
+  values documented.
+- each source and header file must have license information at the begining
+- try to write well arranged and clean code
+- use proper namespaces, to avoid conflicting of functions. C doesn't have
+  namespace support, so we are using module name in front of any symbol name.
+- function names could be either module_multi_word_name() or
+  module_multiWordName().
+- include doxygen comment with function description into header file.
+- do not create variables at top of function. Declare that variable just
+  before you use it. If you have longer functions, it is easier to find
+  what the variable is.
+- use only english in comments, function names etc. Also, all bot messages
+  should be in english, to allow easy localization.
+- only ASCII chars in source code (no codepage problem)
+
+- your code must compile without warnings with default CFLAGS options
+  (-std=gnu99 -Wall -Wextra -Werror)
+- pay attention to valgrind, your code must be leak-free, no valgrind
+  errors are allowed, except that listed in support/valgrind-suppressions.txt
+  which are errors outside project (in glibc, ...). All memory must be
+  freed at application exit.
+
+- when commiting to svn:
+  - commit message must contain all changes you've made, with line begining
+    with file name and description of change. for example:
+
+    src/main.c: Fixed loading
+    plugins/test/plugin.c: Fixed memory leak
+  - don't commit compiled files, only sources.
+
+For coding style, look at this example:
+
+#include <stdio.h>
+
+// Forward declaration
+typedef struct sExampleStructure ExampleStructure;
+
+/**
+ * Contains example of coding style.
+ */
+struct sExampleStructure {
+	int intValue;		/**< Represents integer */
+	char *something;	/**< Contains some string, this is to
+				demonstrate multi line comment */
+}; // sMyStructure
+
+/**
+ * Example of function with variable arguments list. You should describe
+ * what are the rules for variable arguments list.
+ * @param parameter Used to return value bigger than this input.
+ * @return Value bigger than parameter.
+ */
+int example_get_bigger(int parameter, ...) {
+	return parameter + 1;
+} // example_function
+

@@ -1,0 +1,84 @@
+--- ToDo ---
+
+(po ztrate kodu, co chybi a je potreba udelat) - v zavorce odhad
+velikosti kodu co to zabere
+
+Python:
+timer__init__()
+timer.callback()
+command.__init__()
+command.callback(channel, user)
+start_timer(timer)
+hook_command(command)
+join(channel)
+find_user(nick)
+find_channel(channel)
+config_read(section, item, defvalue)
+config_set(section, item, value)
+event_channel_action(channel, user, text)
+event_private_action(user, text)
+event_quit(user)
+event_op(channel, user)
+event_deop(channel, user)
+event_voice(channel, user)
+event_devoice(channel, user)
+event_halfop(channel, user)
+event_dehalfop(channel, user)
+event_ban(channel, address)
+event_unban(channel, address)
+event_mode(channel, mode_string)
+event_exit()
+
+- users (30kB)
+-- new: ochrana uzivatelu (kdovi)
+
+- table (tabulkovy interface pro textovou konzoli) (10kB)
+
+- plugin blacklist (nenacitat pluginy, ktere jsou v blacklistu, i kdyz
+  existuji) (2kB)
+- topic handling - zjisti + bude pamatovat topic ke kazdemu kanalu, eventy
+  pokud nekdo topic zmeni (2kB)
+- rozlisit ACTION a CTCP od normalni zpravy
+
+-- toolbox (5kB)
+--- mktime
+--- new: duration
+--- new: str2time
+
+- htable (nespecha) (30kB)
+- htmanager (nespecha) (30kB)
+
+Toho zas neni tolik ... tak na 3 tydny... (28.7.)
+Za 4 tydny (27.8.) hotovo vse dulezite co bylo, chybi mene podstatne veci jako
+htable, htmanager, atd., ale ty nemely velkou prioritu, protoze zatim nebyly
+nikde pouzity.
+
+--- Done ---
+- socketpool (odhad: 15kB, skutecnost: 15kB)
+- loading pluginu znovu, zavislosti (odhad: 20kB, skutecnost: 15kB)
+- telnet (odhad 40kB, skutecnost 64kB):
+-- zakladni pripojeni ke konzoli (5kB)
+-- interface (10kB)
+-- telnet protokol (10kB)
+--- parsovani (5kB)
+--- local echo (1kB)
+--- window size change (1kB)
+---- wordwrap (odhad 2kB, skutecnost 4kB)
+-- new: podpora pro jine nez telnet klienty (na to je vhodne myslet uz pri
+   prepisovani) (5kB)
+-- zakladni prikazy (15kB)
+- main znovu napsat, ciste (odhad 10kB, skutecnost 7kB)
+- timery (odhad 20kB, skutecnost 6kB)
+- htval (odhad 15kB, skutecnost 15kB)
+- config pokud neexistuje, default hodnota (odhad 1kB, skutecnost 0kB)
+- commands (odhad 10kB, skutecnost 11kB)
+- irclib kanaly (odhad: 10kB, skutecnost: 7kB)
+- new: irclib uzivatele (odhad: 5kB, skutecnost: 6kB)
+- config pouziva htval (-5kB)
+- config_set (odhad: 10kB, skutecnost: 11kB)
+- config_save (odhad: 5kB, skutecnost: 3kB)
+- users (odhad: 30kB, skutecnost: 34kB)
+-- sprava uzivatelu v telnetu (odhad 10kB, skutecnost 20kB)
+-- interface (10kB)
+-- automode (5kB)
+- dummytalk (odhad: 5kB, skutecnost: 5kB)

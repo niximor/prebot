@@ -1,0 +1,33 @@
+Installation instructions:
+
+IRCbot doesn't have any special requirements about libraries or tools that
+are required. You only need working C compiler with C99 standard support
+(usualy gcc) and basic header files including linux kernel headers.
+
+To make ircbot binary and all plugins, just type
+
+$ make
+
+When compilation finishes, you must install binaries into directory tree
+to be able to run ircbot.
+By default, ircbot installs into the same directory as the sources are.
+If you want to change this, change value of variable PREFIX= in Makefile.
+
+$ make install
+
+Note: You must have permissions to write to destination directory.
+
+Now you can run ircbot by typping ./ircbot.
+
+Also you may want to look at configuration file (ircbot.cfg) where
+you can specify various configuration options.
+
+When the bot starts, you should be able to connect to administration interface
+via telnet using local port 12345 (default behavior, can be changed in
+config).
+
+If you want to uninstall ircbot, just type
+
+$ make uninstall
+
+All binary files will be removed, but configuration will be kept.

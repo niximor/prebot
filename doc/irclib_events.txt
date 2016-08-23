@@ -1,0 +1,119 @@
+IRClib events documentation:
+
+onconnected
+	Fired when user gets connected to server and MOTD has been received.
+	User data is IRCEvent_Notify structure.
+
+ondisconnected
+	Fired when connection to server is lost.
+	User data is IRCEvent_Notify structure.
+
+onrawreceive
+	Fired when some data are received from server.
+	User data is IRCEvent_RawData structure.
+	You can cancel default processing of received data by IRClib by setting
+	cancelBubble to true in your last event handler.
+
+onrawsend
+	Fired when some data are sent to server.
+	User data is IRCEvent_RawData structure
+	You can cancel sending the data by setting cancelBubble to true in last
+	event handler.
+
+onping
+	Fired when PING message has been received.
+	User data points to tokenized message (TOKENS structure).
+	You can cancel default PONG reply by setting cancelBubble to true
+	in last event handler.
+
+onservermessage
+	Fired when server sends numeric message.
+	User data points to IRCEvent_ServerMessage structure.
+
+onjoin
+	Fired when a user joins channel that you are connected to.
+	User data points to IRCEvent_Join structure.
+
+onjoined
+	Fired when you join a channel.
+	User data points to IRCEvent_Join structure.
+
+onchannelmessage
+	Fired when someone posts message to channel.
+	User data points to IRCEvent_Message structure.
+
+onprivatemessage
+	Fired when someone sends private message to you.
+	User data points to IRCEvent_Message structure with null channel
+	member.
+
+onchannelnotice
+	Fired when someone posts notice to channel.
+	User data points to IRCEvent_Message structure
+
+onprivatenotice
+	Fired when someone posts notice to you.
+	User data points to IRCEvent_Message structure.
+
+onchangeprefix
+	Fired when someone changes prefix of another user on channel. It is
+	not fired for op, voice and halfop prefixes, because they has it's
+	own event.
+	User data points to IRCEvent_Mode structure.
+
+onop
+	Fired when someone is given the op status.
+	User data points to IRCEvent_Mode structure.
+
+ondeop
+	Fired when someone has lost his op status.
+	User data points to IRCEvent_Mode structure.
+
+onvoice
+	Fired when someone is given the voice status.
+	User data points to IRCEvent_Mode structure.
+
+ondevoice
+	Fired when someone has lost his op status.
+	User data points to IRCEvent_Mode structure.
+
+onhalfop
+	Fired when someone is given the halfop status.
+	User data points to IRCEvent_Mode structure.
+
+ondehalfop
+	Fired when someone lost his halfop status.
+	User data points to IRCEvent_Mode structure.
+
+onchangelist
+	Fired when someone adds or removes an address from channel list (invite,
+	except, ...).
+	User data points to IRCEvent_Mode structure.
+
+onban
+	Fired when someone adds address to banlist.
+	User data points to IRCEvent_Mode structure.
+
+onunban
+	Fired when someone removes address from banlist.
+	User data points to IRCEvent_Mode structure.
+
+onmode
+	Fired when another mode has been changed
+	User data points to IRCEvent_Mode structure, where target can be null.
+
+onkick
+	Fired, when somebody got kicked.
+	User data points to IRCEvent_Kick structure.
+
+onkicked
+	Fired, when you got kicked.
+	User data points to IRCEvent_Kick structure.
+
+onnickchanged
+	Fired, when your nick was changed.
+	User data points to IRCEvent_NickChange structure.
+
+onnick
+	Fired, when some user changes hist nick.
+	User data points to IRCEvent_NickChange structure.
