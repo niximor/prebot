@@ -68,7 +68,7 @@ uninstall: plugins-uninstall
 fullclean: clean uninstall
 
 docker: dist install
-	docker build -t docker.lan.gcm.cz/prebot:latest . && docker push docker.lan.gcm.cz/prebot:latest
+	docker build -t registry.lan.gcm.cz/prebot:latest . && docker push registry.lan.gcm.cz/prebot:latest
 
 .PHONY: all src plugins install run valgrind src-install plugins-install \
 	run valgrind clean src-clean plugins-clean uninstall fullclean \

@@ -30,6 +30,8 @@
 #include "../users/interface.h"
 #include <toolbox/tb_string.h>
 
+#include <curl/curl.h>
+
 #ifndef PLUGIN_NAME
 # define PLUGIN_NAME "gpxtell"
 #endif
@@ -146,6 +148,29 @@ char *gpxtell_format_dt(double dt) {
 	return ret;
 }
 
+struct MemoryStruct {
+	char *memory;
+	size_t size;
+};
+
+static size_t write_memory_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+	size_t realsize = size * nmemb;
+
+	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
+
+	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
+
+	if (mem->memory == NULL) {
+		return 0;
+	}
+
+	memcpy(&(mem->memory[mem->size]), contents, realsize);
+	mem->size += realsize;
+	mem->memory[mem->size] = '\0';
+
+	return realsize;
+}
+
 void gpxtell_process_gpx(GpxTellGpx *cli) {
 	xmlNodePtr root = cli->doc->children;
 
@@ -173,7 +198,10 @@ void gpxtell_process_gpx(GpxTellGpx *cli) {
 
 	char *lat = NULL;
 	char *lon = NULL;
-	char geoloc[4096] = "\0";
+
+	struct MemoryStruct geoloc;
+	geoloc.memory = NULL;
+	geoloc.size = 0;
 
 	// And finally, coordinates.
 	xmlNodePtr node = gpxtell_findNode(root, "wpt", NULL);
@@ -183,14 +211,15 @@ void gpxtell_process_gpx(GpxTellGpx *cli) {
 
 		// Geolocation
 	        char url[255];
-	        snprintf(url, 255, "http://gc.gcm.cz/geoloc.php?lat=%s&lon=%s", lat, lon);
-	        void *ctx = xmlNanoHTTPMethod(url, "GET", NULL, NULL, "Connection: Close\r\n", 0);
-		if (ctx) {
-			int readed = xmlNanoHTTPRead(ctx, geoloc, 4095);
-			if (readed > 0) {
-				geoloc[readed] = '\0';
-			}
-			xmlNanoHTTPClose(ctx);
+	        snprintf(url, 255, "https://gc.gcm.cz/geoloc.php?lat=%s&lon=%s", lat, lon);
+		CURL *curl = curl_easy_init();
+		if (curl) {
+			curl_easy_setopt(curl, CURLOPT_URL, url);
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_memory_callback);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&geoloc);
+			curl_easy_perform(curl);
+			curl_easy_cleanup(curl);
 		}
 	}
 
@@ -200,7 +229,7 @@ void gpxtell_process_gpx(GpxTellGpx *cli) {
 	
 	// Try to match against filter...
 	sqlite3_bind_text(cli->dt->stmtFilterSelect, 1, reviewer, -1, SQLITE_TRANSIENT);
-	sqlite3_bind_text(cli->dt->stmtFilterSelect, 2, geoloc, -1, SQLITE_TRANSIENT);
+	sqlite3_bind_text(cli->dt->stmtFilterSelect, 2, geoloc.memory, geoloc.size, SQLITE_TRANSIENT);
 	sqlite3_bind_text(cli->dt->stmtFilterSelect, 3, cache_name, -1, SQLITE_TRANSIENT);
 
 	if (sqlite3_step(cli->dt->stmtFilterSelect) != SQLITE_ROW) {
@@ -212,7 +241,7 @@ void gpxtell_process_gpx(GpxTellGpx *cli) {
 			diff,
 			terr,
 			fmt_coords,
-			geoloc,
+			geoloc.memory,
 			reviewer,
 			gcid
 		);
@@ -225,10 +254,14 @@ void gpxtell_process_gpx(GpxTellGpx *cli) {
 			diff,
 			terr,
 			fmt_coords,
-			geoloc,
+			geoloc.memory,
 			reviewer,
 			gcid
 		);
+	}
+
+	if (geoloc.memory) {
+		free(geoloc.memory);
 	}
 
 	sqlite3_reset(cli->dt->stmtFilterSelect);

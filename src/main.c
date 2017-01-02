@@ -195,12 +195,18 @@ int main(int argc, char *argv[]) {
 
 	// Get configuration file name
 	char *dir;
-	if (argc >= 1) {
-		dir = dirs_dirname(argv[0]);
+	char *configfile;
+	if (argc >= 2) {
+		configfile = strdup(argv[1]);
 	} else {
-		dir = strdup("./");
+		if (argc >= 1) {
+			dir = dirs_dirname(argv[0]);
+		} else {
+			dir = strdup("./");
+		}
+		configfile = dirs_makefullpath(dir, "ircbot.cfg");
 	}
-	char *configfile = dirs_makefullpath(dir, "ircbot.cfg");
+	printError("main", "Trying to load config from %s.", configfile);
 
 	// Go to my root directory.
 	chdir(dir);

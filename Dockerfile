@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-RUN apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y libsqlite3-0 python libxml2 python-beautifulsoup ca-certificates
+RUN apt-get -o Acquire::ForceIPv4=true update && apt-get -o Acquire::ForceIPv4=true install -y libsqlite3-0 libcurl3 libcurl3-gnutls python libxml2 python-beautifulsoup ca-certificates
 
 ADD src/prebot fetch.py googl.py /srv/prebot/
 ADD plugins/*.so /srv/prebot/plugins/

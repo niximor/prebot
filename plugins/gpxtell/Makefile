@@ -10,7 +10,7 @@ OBJS=
 all: $(LIBNAME)
 
 $(LIBNAME): plugin.c
-	$(CC) $(CFLAGS) -lm `xml2-config --cflags` -D'PLUGIN_NAME="$(basename $(LIBNAME))"' plugin.c $(OBJS) -shared -o $(LIBNAME) `xml2-config --libs`
+	$(CC) $(CFLAGS) -lm `xml2-config --cflags` -D'PLUGIN_NAME="$(basename $(LIBNAME))"' plugin.c $(OBJS) -shared -o $(LIBNAME) `xml2-config --libs` -lcurl
 
 install:
 	$(INSTALL) -D $(LIBNAME) $(PREFIX)/plugins/$(LIBNAME)
